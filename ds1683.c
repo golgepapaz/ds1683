@@ -14,6 +14,8 @@
 #define DS1683_REG_CONFIG         0x16
 #define DS1683_REG_EEPROM         0x20
 
+#define DS1683_EEPROM_SIZE		16
+
 
 static ssize_t ds1683_show(struct device * dev, struct device_attribute *attr,
                 char *buf)
@@ -102,12 +104,55 @@ static SENSOR_DEVICE_ATTR_2(event_count_alarm, S_IRUGO | S_IWUSR, ds1683_show,
 static const struct attribute_group ds1683_group = {
 	.attrs = (struct attribute *[]) {
 		&sensor_dev_attr_elapsed_time.dev_attr.attr,
-		&sensor_dev_attr_elapsed_time_alarm.dev_attr.attr,
+		&sensor_dev_attr_elapsed_time_alarm.dev_attr.a{ttr,
 		&sensor_dev_attr_event_count.dev_attr.attr,
         &sensor_dev_attr_event_count_alarm.dev_attr.attr,
 		NULL,
 	},
 };
+static ssize_t ds1683_eeprom_read(struct file* filp, struct kobject *kobj,
+                struct bin_attribute *attr,
+                char *buf, loff_t off, size_t count)
+{
+    struct i2c_client *client = kobj_to_i2c_client(kobj);
+    int rc;
+    dev_dbg(&client->dev, "ds1683_eeprom_read(p=%p, off=%lli, c=%zi)\n",
+		buf, off, count);
+
+	rc = i2c_smbus_read_i2c_block_data(client, DS1683_REG_EEPROM + off,
+					   count, buf);
+	if (rc < 0)
+		return -EIO;
+
+	return count;    
+}
+static ssize_t ds1683_eeprom_write(struct file *filp, struct kobject *kobj,
+				   struct bin_attribute *attr,
+				   char *buf, loff_t off, size_t count)
+{
+	struct i2c_client *client = kobj_to_i2c_client(kobj);
+
+	dev_dbg(&client->dev, "ds1683_eeprom_write(p=%p, off=%lli, c=%zi)\n",
+		buf, off, count);
+
+	/* Write out to the device */
+	if (i2c_smbus_write_i2c_block_data(client, DS1683_REG_EEPROM + off,
+					   count, buf) < 0)
+		return -EIO;
+
+	return count;
+}
+
+static const struct bin_attribute ds1683_eeprom_attr = {
+	.attr = {
+		.name = "eeprom",
+		.mode = S_IRUGO | S_IWUSR,
+	},
+	.size = DS1683_EEPROM_SIZE,
+	.read = ds1683_eeprom_read,
+	.write = ds1683_eeprom_write,
+};
+
 
 static int ds1683_probe(struct i2c_client *client,
             const struct i2c_device_id *id)
@@ -122,12 +167,21 @@ static int ds1683_probe(struct i2c_client *client,
     }
 
     rc = sysfs_create_group(&client->dev.kobj, &ds1683_group);
-    return rc;
+    if (rc)
+        return rc;
+    rc =sysfs_create_bin_file(&client->dev.kobj, &ds1683_eeprom_attr)
+    if (rc) {
+        sysfs_remove_group(&client->dev.kobj, &ds1683_group)
+        return rc
+    }
+    return 0;
 
 }
 static int ds1683_remove(struct i2c_client *client)
 {
+    sysfs_remove_bin_file(&client->dev.kobj, &ds1683_eeprom_attr)
     sysfs_remove_group(&client->dev.kobj, &ds1683_group);
+
     return 0;
 }
 
