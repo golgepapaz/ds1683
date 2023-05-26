@@ -104,7 +104,7 @@ static SENSOR_DEVICE_ATTR_2(event_count_alarm, S_IRUGO | S_IWUSR, ds1683_show,
 static const struct attribute_group ds1683_group = {
 	.attrs = (struct attribute *[]) {
 		&sensor_dev_attr_elapsed_time.dev_attr.attr,
-		&sensor_dev_attr_elapsed_time_alarm.dev_attr.a{ttr,
+		&sensor_dev_attr_elapsed_time_alarm.dev_attr.attr,
 		&sensor_dev_attr_event_count.dev_attr.attr,
         &sensor_dev_attr_event_count_alarm.dev_attr.attr,
 		NULL,
