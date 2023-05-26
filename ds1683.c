@@ -169,7 +169,7 @@ static int ds1683_probe(struct i2c_client *client,
     rc = sysfs_create_group(&client->dev.kobj, &ds1683_group);
     if (rc)
         return rc;
-    rc =sysfs_create_bin_file(&client->dev.kobj, &ds1683_eeprom_attr)
+    rc =sysfs_create_bin_file(&client->dev.kobj, &ds1683_eeprom_attr);
     if (rc) {
         sysfs_remove_group(&client->dev.kobj, &ds1683_group)
         return rc
@@ -179,7 +179,7 @@ static int ds1683_probe(struct i2c_client *client,
 }
 static int ds1683_remove(struct i2c_client *client)
 {
-    sysfs_remove_bin_file(&client->dev.kobj, &ds1683_eeprom_attr)
+    sysfs_remove_bin_file(&client->dev.kobj, &ds1683_eeprom_attr);
     sysfs_remove_group(&client->dev.kobj, &ds1683_group);
 
     return 0;
